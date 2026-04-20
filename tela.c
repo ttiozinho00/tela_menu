@@ -1,388 +1,146 @@
-/*
-*
-* metodo de compilar o codigo: gcc -o tela tela.c -Wall -pedantic -Wextra -Werror -std=c99
-*/
-
-#include <stdio.h>   /* printf(), getchar(), putchar() */
-#include <stdlib.h>  /* system(), exit() */
-#include <conio.h>   /* getch() */
-#include <windows.h> /* GetStdHandle(), GetConsoleWindow(), GetWindowRect(), AdjustWindowRectEx(), SetWindowPos(), COORD() */
-#include <string.h>  /* strlen() */
+#include <stdio.h>
+#include <stdlib.h>
+#include "conio_v3.2.4.h"
+#include "console_v1.5.5.h"
 
 /**
- * DefiniÃ§Ã£o das cores e constantes
+ * DefiniÃ§Ãµes de Estilo e Layout
  */
-#define COR_FUNDO_MENU_PRINCIPAL 0
-#define COR_LETRA_MENU_PRINCIPAL 7
-#define COR_FUNDO_SELECIONADO_MENU_PRINCIPAL 2
-#define COR_LETRA_SELECIONADO_MENU_PRINCIPAL 15
-#define COR_FUNDO_SUBMENU 7
-#define COR_LETRA_SUBMENU 7
-#define COR_FUNDO_SELECIONADO_SUBMENU 2
-#define COR_LETRA_SELECIONADO_SUBMENU 15
-#define COR_BORDA_JANELA_PRINCIPAL 157
-#define COR_FUNDO_BORDA_JANELA_PRINCIPAL 161
-#define COR_FUNDO_JANELA_PRINCIPAL 131
-
-#define ALTURA_JANELA 25
 #define LARGURA_JANELA 80
+#define ALTURA_JANELA  25
+
+// Cores baseadas no enum COLORS de conio_v3.2.4.h
+#define COR_BORDA          LIGHTBLUE
+#define COR_TEXTO_NORMAL   LIGHTGRAY
+#define COR_TEXTO_DESTAQUE YELLOW
+#define COR_SELECAO_FUNDO  GREEN
+#define COR_SELECAO_TEXTO  WHITE
+
+int opcaoMenuPrincipal = 1;
+int opcaoSubMenu = 1;
+
+/* ProtÃ³tipos das funÃ§Ãµes */
+void inicializarSistema(void);
+void desenharInterfaceBase(const char* titulo);
+void exibirMenuPrincipal(void);
+void exibirSubMenu(void);
+void navegarMenuPrincipal(void);
+void navegarSubMenu(void);
 
 /**
- * variaveis para controlar a navegação no menu
+ * Configura o ambiente inicial usando console_v1.5.5
  */
-int opcaoMenuPrincipalSelecionada = 1;
-int opcaoSubMenuSelecionada = 0;
-
-/**
- * protótipo das funções
- */
-void definirCorTexto(int cor);
-void limparTela();
-void definirTamanhoPosicaoJanelaPrincipal();
-void definirCoresJanelaPrincipal();
-void exibirBarraMenuPrincipal();
-void exibirOpcaoMenuPrincipal(char *texto, int opcao, int selecionado);
-void exibirMenuPrincipal();
-void exibirSubMenu();
-void navegarSubMenu();
-void executarOpcao1();
-void executarOpcao2();
-void executarOpcao3();
-void navegarMenuPrincipal();
-void exibirMenu();
-
-/**
- * função para definir as cores do texto
- * @param cor CÃ³digo da cor
- */
-void definirCorTexto(int cor) 
-{
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, cor);
+void inicializarSistema(void) {
+    setTituloConsole("Sistema de Gestao v1.0");
+    setDimensaoJanela(LARGURA_JANELA, ALTURA_JANELA);
+    setCursorStatus(DESLIGAR);
+    textmode(C80);
 }
 
 /**
- * função para limpar a tela
+ * Desenha a moldura e fundo usando conio_v3.2.4
  */
-void limparTela() 
-{
-    system("cls");
-}
-
-/**
- * função para definir o tamanho e posiÃ§Ã£o da janela principal
- */
-void definirTamanhoPosicaoJanelaPrincipal() 
-{
-    HWND hWnd = GetConsoleWindow();
-    RECT rect;
-
-    GetWindowRect(hWnd, &rect);
-    rect.left = 50;
-    rect.top = 50;
-    rect.right = rect.left + LARGURA_JANELA * 12;
-    rect.bottom = rect.top + ALTURA_JANELA * 2;
-
-    AdjustWindowRectEx(&rect, WS_EX_CLIENTEDGE, 0, WS_EX_TOOLWINDOW);
-
-    SetWindowPos(hWnd, HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW);
-}
-
-/**
- * função para definir as cores da janela principal
- */
-void definirCoresJanelaPrincipal() 
-{
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+void desenharInterfaceBase(const char* titulo) {
     int i;
+    textbackground(BLACK);
+    textcolor(COR_BORDA);
+    clrscr();
 
-    /* Definir cor da borda */
-    SetConsoleTextAttribute(hConsole, COR_BORDA_JANELA_PRINCIPAL);
-    printf("********************************************************************\n");
-    SetConsoleTextAttribute(hConsole, COR_FUNDO_BORDA_JANELA_PRINCIPAL);
-
-    /* Definir cor do fundo */
-    for (i = 1; i < ALTURA_JANELA - 1; i++)
-    {
-        printf("*                                                                  *\n");
+    // Borda Superior e Inferior
+    for (i = 1; i <= LARGURA_JANELA; i++) {
+        gotoxy(i, 1); putch('*');
+        gotoxy(i, ALTURA_JANELA); putch('*');
     }
 
-    /* Definir cor da borda inferior */
-    SetConsoleTextAttribute(hConsole, COR_BORDA_JANELA_PRINCIPAL);
-    printf("********************************************************************\n");
-}
-
-/**
- * função para exibir a barra do menu principal
- */
-void exibirBarraMenuPrincipal() 
-{
-    definirCorTexto(COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("********************************************************************\n");
-    definirCorTexto(COR_LETRA_MENU_PRINCIPAL | (COR_FUNDO_MENU_PRINCIPAL << 4));
-    printf("*                                                                  *\n");
-    definirCorTexto(COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("********************************************************************\n");
-}
-
-/**
- * função para exibir a opção do menu principal
- * @param texto Texto da opção do menu
- * @param opcao numero da opção
- * @param selecionado Indica se a opção está selecionada
- */
-void exibirOpcaoMenuPrincipal(char *texto, int opcao, int selecionado) 
-{
-    definirCorTexto(selecionado ? COR_FUNDO_SELECIONADO_MENU_PRINCIPAL | (COR_LETRA_SELECIONADO_MENU_PRINCIPAL << 4) : COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("* ");
-
-    if (opcao < 10) 
-    {
-        printf("0");
+    // Bordas Laterais
+    for (i = 2; i < ALTURA_JANELA; i++) {
+        gotoxy(1, i); putch('*');
+        gotoxy(LARGURA_JANELA, i); putch('*');
     }
 
-    printf("%d - %s", opcao, texto);
+    // TÃ­tulo Centralizado
+    textcolor(COR_TEXTO_DESTAQUE);
+    gotoxy((LARGURA_JANELA / 2) - (10), 2);
+    cputs(titulo);
+}
 
-    if (selecionado) 
-    {
-        printf(" (**)");
-    } 
-
-    else 
-    {
-        printf("   ");
+/**
+ * Exibe uma opÃ§Ã£o formatada com detecÃ§Ã£o de seleÃ§Ã£o
+ */
+void renderizarItem(int linha, int id, const char* rotulo, int selecionado) {
+    gotoxy(10, linha);
+    if (selecionado) {
+        textbackground(COR_SELECAO_FUNDO);
+        textcolor(COR_SELECAO_TEXTO);
+    } else {
+        textbackground(BLACK);
+        textcolor(COR_TEXTO_NORMAL);
     }
-
-    printf("                                                    *\n");
+    cprintf(" %02d. %-20s ", id, rotulo);
+    textbackground(BLACK);
 }
 
-/**
- * função para exibir o menu principal
- */
-void exibirMenuPrincipal() 
-{
-    limparTela();
-    definirCoresJanelaPrincipal();
-    exibirBarraMenuPrincipal();
-
-    /* Exibir opções do menu principal */
-    exibirOpcaoMenuPrincipal("Opcao 1", 1, opcaoMenuPrincipalSelecionada == 1);
-    exibirOpcaoMenuPrincipal("Opcao 2", 2, opcaoMenuPrincipalSelecionada == 2);
-    exibirOpcaoMenuPrincipal("Opcao 3", 3, opcaoMenuPrincipalSelecionada == 3);
-    exibirOpcaoMenuPrincipal("Sair", 4, opcaoMenuPrincipalSelecionada == 4);
-
-    /* Exibir rodapé do menu principal */
-    definirCorTexto(COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("********************************************************************\n");
-}
-
-/**
- * função para exibir o submenu
- */
-void exibirSubMenu() 
-{
-    limparTela();
-    definirCoresJanelaPrincipal();
-    exibirBarraMenuPrincipal();
-
-    /* Exibir opções do submenu */
-    exibirOpcaoMenuPrincipal("SubOpcao 1", 1, opcaoSubMenuSelecionada == 1);
-    exibirOpcaoMenuPrincipal("SubOpcao 2", 2, opcaoSubMenuSelecionada == 2);
-    exibirOpcaoMenuPrincipal("Voltar", 3, opcaoSubMenuSelecionada == 3);
-
-    /* Exibir rodapé do submenu */
-    definirCorTexto(COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("********************************************************************\n");
-}
-
-/**
- * função para navegar no submenu
- */
-void navegarSubMenu() 
-{
-    int tecla;
-    while (1) 
-    {
-        tecla = getch();
-        if (tecla == 224) {  /* Detecta as setas */
-            switch (getch()) 
-            {
-                case 72:  /* Seta para cima */
-                    if (opcaoSubMenuSelecionada > 1) 
-                    {
-                        opcaoSubMenuSelecionada--;
-                    }
-                    break;
-                case 80:  /* Seta para baixo */
-                    if (opcaoSubMenuSelecionada < 3) 
-                    {
-                        opcaoSubMenuSelecionada++;
-                    }
-                    break;
-            }
-        } 
-
-        else if (tecla == 13) 
-        {  /* Enter */
-            if (opcaoSubMenuSelecionada == 3) 
-            {
-                exibirMenuPrincipal();
-                navegarMenuPrincipal();
-            }
-            break;
-        }
-        exibirSubMenu();
-    }
-}
-
-/**
- * função para executar a opção 1
- */
-void executarOpcao1() 
-{
-    printf("Executando Opcao 1...\n");
-    system("pause");
-}
-
-/**
- * função para executar a opção 2
- */
-void executarOpcao2() 
-{
-    exibirSubMenu();
-    navegarSubMenu();
-}
-
-/**
- * função para executar a opção 3
- */
-void executarOpcao3() 
-{
-    printf("Executando Opcao 3...\n");
-    system("pause");
-}
-
-/**
- * função para navegar no menu principal
- */
-void navegarMenuPrincipal() 
-{
-    int tecla;
-    while (1) 
-    {
-        tecla = getch();
-        if (tecla == 224) {  /* Detecta as setas */
-            switch (getch()) 
-            {
-                case 72:  /* Seta para cima */
-                    if (opcaoMenuPrincipalSelecionada > 1) 
-                    {
-                        opcaoMenuPrincipalSelecionada--;
-                    }
-                    break;
-                case 80:  /* Seta para baixo */
-                    if (opcaoMenuPrincipalSelecionada < 4) 
-                    {
-                        opcaoMenuPrincipalSelecionada++;
-                    }
-                    break;
-            }
-        } 
-
-        else if (tecla == 13) 
-        {  /* Enter */
-            switch (opcaoMenuPrincipalSelecionada) 
-            {
-                case 1:
-                    executarOpcao1();
-                    break;
-                case 2:
-                    executarOpcao2();
-                    break;
-                case 3:
-                    executarOpcao3();
-                    break;
-                case 4:
-                    exit(0);
-                    break;
-            }
-            exibirMenuPrincipal();
-        }
-
-        else if (tecla == 'M' || tecla == 'm')  /* Tecla 'M' para exibir o menu de opções */
-        {
-            exibirMenu();
-        }
-
-        exibirMenuPrincipal();
-    }
-}
-
-/**
- * função para exibir o menu de opções
- */
-void exibirMenu()
-{
-    limparTela();
-    definirCoresJanelaPrincipal();
-    exibirBarraMenuPrincipal();
-
-    definirCorTexto(COR_LETRA_MENU_PRINCIPAL | (COR_FUNDO_MENU_PRINCIPAL << 4));
-    printf("* Menu de opções                                                    *\n");
-
-    definirCorTexto(COR_FUNDO_MENU_PRINCIPAL | (COR_LETRA_MENU_PRINCIPAL << 4));
-    printf("********************************************************************\n");
-
-    printf("\n");
-    printf("  Use as setas para navegar e 'Enter' para selecionar uma opcao.\n");
-    printf("\n");
-
-    printf("  1. Executar Opcao 1\n");
-    printf("  2. Executar Opcao 2\n");
-    printf("  3. Executar Opcao 3\n");
-    printf("  4. Voltar para o Menu Principal\n");
-
-    printf("\n");
-    printf("********************************************************************\n");
-
-    int escolha;
-    while (1)
-    {
-        escolha = getch();
-        if (escolha == 13) /* Enter */
-        {
-            limparTela();
-            switch (opcaoMenuPrincipalSelecionada) 
-            {
-                case 1:
-                    executarOpcao1();
-                    break;
-                case 2:
-                    executarOpcao2();
-                    break;
-                case 3:
-                    executarOpcao3();
-                    break;
-                case 4:
-                    exibirMenuPrincipal();
-                    break;
-            }
-            break;
-        }
-    }
-}
-
-/**
- * função principal
- */
-int main(int argc, char const *argv[])
-{
-    argv = argv;
-    argc = argc;
+void exibirMenuPrincipal(void) {
+    desenharInterfaceBase("MENU PRINCIPAL");
+    renderizarItem(6, 1, "Cadastros", opcaoMenuPrincipal == 1);
+    renderizarItem(7, 2, "Relatorios (SubMenu)", opcaoMenuPrincipal == 2);
+    renderizarItem(8, 3, "Configuracoes", opcaoMenuPrincipal == 3);
+    renderizarItem(9, 4, "Sair", opcaoMenuPrincipal == 4);
     
-    definirTamanhoPosicaoJanelaPrincipal();
-    definirCoresJanelaPrincipal();
-    exibirMenuPrincipal();
+    textcolor(DARKGRAY);
+    gotoxy(5, 22);
+    cputs("Setas: Navegar | Enter: Confirmar");
+}
+
+void exibirSubMenu(void) {
+    desenharInterfaceBase("RELATORIOS");
+    renderizarItem(6, 1, "Vendas Mensais", opcaoSubMenu == 1);
+    renderizarItem(7, 2, "Estoque Atual", opcaoSubMenu == 2);
+    renderizarItem(8, 3, "Voltar", opcaoSubMenu == 3);
+}
+
+void navegarSubMenu(void) {
+    int tecla;
+    while (1) {
+        exibirSubMenu();
+        tecla = getch();
+
+        if (tecla == 0 || tecla == 224) { // Teclas especiais
+            tecla = getch();
+            if (tecla == 72 && opcaoSubMenu > 1) opcaoSubMenu--; // Cima
+            if (tecla == 80 && opcaoSubMenu < 3) opcaoSubMenu++; // Baixo
+        } else if (tecla == 13) { // Enter
+            if (opcaoSubMenu == 3) return;
+            gotoxy(10, 12);
+            cprintf("Gerando Relatorio %d...", opcaoSubMenu);
+            getch();
+        }
+    }
+}
+
+void navegarMenuPrincipal(void) {
+    int tecla;
+    while (1) {
+        exibirMenuPrincipal();
+        tecla = getch();
+
+        if (tecla == 0 || tecla == 224) {
+            tecla = getch();
+            if (tecla == 72 && opcaoMenuPrincipal > 1) opcaoMenuPrincipal--;
+            if (tecla == 80 && opcaoMenuPrincipal < 4) opcaoMenuPrincipal++;
+        } else if (tecla == 13) {
+            switch (opcaoMenuPrincipal) {
+                case 1: gotoxy(10, 15); cputs("Modulo de Cadastro..."); getch(); break;
+                case 2: navegarSubMenu(); break;
+                case 3: gotoxy(10, 15); cputs("Abrindo Configuracoes..."); getch(); break;
+                case 4: clrscr(); exit(0);
+            }
+        }
+    }
+}
+
+int main(void) {
+    inicializarSistema();
     navegarMenuPrincipal();
     return 0;
 }
